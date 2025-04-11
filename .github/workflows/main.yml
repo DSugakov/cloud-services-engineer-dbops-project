@@ -10,32 +10,23 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Debug environment variables
+    - name: Debug secrets
       run: |
-        echo "DB_HOST value length: ${#DB_HOST}"
-        echo "DB_PORT value length: ${#DB_PORT}"
-        echo "DB_NAME value length: ${#DB_NAME}"
-        echo "DB_USER value length: ${#DB_USER}"
-      env:
-        DB_HOST: ${{ secrets.DB_HOST }}
-        DB_PORT: ${{ secrets.DB_PORT }}
-        DB_NAME: ${{ secrets.DB_NAME }}
-        DB_USER: ${{ secrets.DB_USER }}
+        echo "DB_HOST: ${{ secrets.DB_HOST }}"
+        echo "DB_PORT: ${{ secrets.DB_PORT }}"
+        echo "DB_NAME: ${{ secrets.DB_NAME }}"
+        echo "DB_USER: ${{ secrets.DB_USER }}"
+        echo "DB_PASSWORD: [REDACTED]"
 
     - name: Apply migrations with Docker
-      env:
-        FLYWAY_URL: jdbc:postgresql://${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }}
-        FLYWAY_USER: ${{ secrets.DB_USER }}
-        FLYWAY_PASSWORD: ${{ secrets.DB_PASSWORD }}
       run: |
-        echo "Connection URL: $FLYWAY_URL"
-        echo "User: $FLYWAY_USER"
+        echo "Trying to connect to: jdbc:postgresql://${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }}"
         docker run --rm \
-          -e FLYWAY_URL \
-          -e FLYWAY_USER \
-          -e FLYWAY_PASSWORD \
           -v $(pwd)/migrations:/flyway/sql \
           flyway/flyway:9.8.1 \
+          -url="jdbc:postgresql://${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }}" \
+          -user="${{ secrets.DB_USER }}" \
+          -password="${{ secrets.DB_PASSWORD }}" \
           migrate
 
     ### Этот шаг оставьте без изменений
