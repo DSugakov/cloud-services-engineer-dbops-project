@@ -5,9 +5,10 @@ CREATE TABLE IF NOT EXISTS product(
 );
 
 CREATE TABLE IF NOT EXISTS product_info(
-    product_id BIGINT NOT NULL,
+    product_id BIGINT NOT NULL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    price DOUBLE PRECISION
+    price DOUBLE PRECISION,
+    CONSTRAINT fk_product_info_product FOREIGN KEY (product_id) REFERENCES product(id)
 );
 
 CREATE TABLE IF NOT EXISTS orders(
@@ -16,13 +17,24 @@ CREATE TABLE IF NOT EXISTS orders(
 );
 
 CREATE TABLE IF NOT EXISTS orders_date(
-    order_id BIGINT NOT NULL,
+    order_id BIGINT NOT NULL PRIMARY KEY,
     status VARCHAR(255),
-    date_created DATE DEFAULT current_date
+    date_created DATE DEFAULT current_date,
+    CONSTRAINT fk_orders_date_orders FOREIGN KEY (order_id) REFERENCES orders(id)
 );
 
 CREATE TABLE IF NOT EXISTS order_product(
     quantity INTEGER NOT NULL,
     order_id BIGINT NOT NULL,
-    product_id BIGINT NOT NULL
+    product_id BIGINT NOT NULL,
+    CONSTRAINT pk_order_product PRIMARY KEY (order_id, product_id),
+    CONSTRAINT fk_order_product_orders FOREIGN KEY (order_id) REFERENCES orders(id),
+    CONSTRAINT fk_order_product_product FOREIGN KEY (product_id) REFERENCES product(id)
 );
+
+-- Создаем индексы для оптимизации запросов
+CREATE INDEX idx_product_name ON product(name);
+CREATE INDEX idx_product_info_price ON product_info(price);
+CREATE INDEX idx_orders_status ON orders(status);
+CREATE INDEX idx_orders_date_created ON orders_date(date_created);
+CREATE INDEX idx_order_product_quantity ON order_product(quantity);
