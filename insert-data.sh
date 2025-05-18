@@ -1,11 +1,11 @@
 #!/bin/bash
 
-PSQL_ADMIN="user"
-PSQL_PASSWORD="password"
-PSQL_HOST="localhost"
+PSQL_ADMIN="denissugakov"
+PSQL_PASSWORD=""
+PSQL_HOST="130.193.38.189"
 PSQL_PORT="5432"
-PSQL_DBNAME="store_default"
-PSQL_CONNECTION="postgresql://${PSQL_ADMIN}:${PSQL_PASSWORD}@${PSQL_HOST}:${PSQL_PORT}/${PSQL_DBNAME}"
+PSQL_DBNAME="store"
+PSQL_CONNECTION="postgresql://${PSQL_ADMIN}@${PSQL_HOST}:${PSQL_PORT}/${PSQL_DBNAME}"
 
 touch init.sql
 

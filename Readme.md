@@ -1,44 +1,74 @@
-# dbops-project
-Исходный репозиторий для выполнения проекта дисциплины "DBOps"
+# Проектная работа дисциплины DBOps
 
-### Create database
+## Требования
 
-`CREATE DATABASE store;`
+* Docker version 27.4.0, build bde2b89 или выше
+* Docker Compose version v2.31.0-desktop.2 или выше
+* psql (PostgreSQL) 16.8 или выше
 
-### Create user for migrations and tests  
+## Настройка секретов в GitHub Actions
 
-`CREATE USER test_user WITH PASSWORD 'test_password';`  
-`GRANT ALL PRIVILEGES ON DATABASE store TO test_user;`  
-`GRANT ALL PRIVILEGES ON SCHEMA public TO test_user;`  
-`GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO test_user;`
-`ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO test_user;`
-`ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO test_user;`
+Для корректной работы `GitHub Actions`, включая возможность установления удаленного соединения с базой данных, необходимо добавить в список секретов репозитория следующие переменные окружения:
 
-### Создание пользователя и выдача прав для автотестов
+DB_HOST: <IP_address>
+DB_PORT: 5432
+DB_NAME: store
+DB_USER: migration_user
+DB_PASSWORD: migration_user_password
 
-```sql
--- Создать пользователя
-CREATE USER autotest WITH PASSWORD 'autotestpass';
+## Клонирование репозитория
 
--- Выдать права на базу данных
-GRANT ALL PRIVILEGES ON DATABASE store TO autotest;
+Клонируйте репозиторий для получения исходных файлов проекта, включая скрипт `insert-data.sh` для создания изначальной базы данных `store_default`.
 
--- Выдать права на схему public
-GRANT ALL PRIVILEGES ON SCHEMA public TO autotest;
+$ git clone https://github.com/DSugakov/cloud-services-engineer-dbops-project.git
 
--- Выдать права на все таблицы в схеме public
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO autotest;
+$ cd ~/cloud-services-engineer-dbops-project
 
--- Выдать права на все последовательности (для автоинкрементов)
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO autotest;
+## Запуск PostgreSQL
 
--- Чтобы новые таблицы автоматически получали права для autotest
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO autotest;
+Запуск контейнера `PostgreSQL` в фоновом режиме с помощью `Docker Compose` для создания локальной среды, необходимой для тестирования миграций и оптимизации базы данных.
 
--- Чтобы новые последовательности автоматически получали права для autotest
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO autotest;
-```
+$ docker-compose up -d
 
-### SELECT query
+## Инициализация исходной структуры базы данных
 
-```
+Скрипт `insert-data.sh` создает исходную структуру таблиц и наполняет их данными, необходимыми для дальнейшей нормализации и оптимизации. Сделайте скрипт исполняемым с помощью команды `chmod +x`. При необходимости отредактируйте параметры подключения к `PostgreSQL` внутри скрипта.
+
+$ chmod +x insert-data.sh
+$ ./insert-data.sh
+
+## Изучение структуры базы данных
+
+Подключение к базе данных `store_default` с помощью `psql` и изучение структуры всех таблиц, используя команды `\dt` и `\d`.
+
+$ psql "host=<IP_address> port=5432 dbname=store_default user=user password=password"
+
+## Создание нового пользователя и новой базы данных
+
+Создание нового пользователя `migration_user` c паролем `migration_user_password` в `PostgreSQL`.
+
+CREATE USER migration_user WITH PASSWORD 'migration_user_password';
+
+Создание еще одной базы данных `store` в `PostgreSQL`. Поскольку под пользователем `migration_user` будут выполняться автотесты и применяться миграции, важно, чтобы пользователь обладал достаточными правами для выполнения этих операций.
+
+CREATE DATABASE store OWNER migration_user;
+
+## Содержание директории `migrations` c миграциями Flyway
+
+| Файл                           | Назначение                                                                                                                                                                                                                                                                                                                                             |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **V001\_\_create\_tables.sql** | Создает начальную структуру базы данных. Это «черновой» вариант схемы с пятью таблицами, в которых есть дублирование данных и пока нет ограничений (например, первичных и внешних ключей). Это позволяет сначала развернуть базу и провести первые автотесты без лишних сложностей.                                                                    |
+| **V002\_\_change\_schema.sql** | Приводит базу в порядок: добавляет недостающие поля (price, date\_created), переносит данные из вспомогательных таблиц, настраивает ключи и связи между таблицами (ограничения целостности), а затем удаляет лишние таблицы. В этом файле происходит нормализация структуры базы - то есть избавление от повторяющихся данных и ошибок проектирования. |
+| **V003\_\_insert\_data.sql**   | Наполняет базу данными: добавляет список товаров и создает заказы с позициями. Данные создаются автоматически - с помощью генерации случайных значений и серий. В конце обновляется информация, нужная PostgreSQL для быстрой работы с этими таблицами.                                                                                               |
+| **V004\_\_create\_index.sql**  | Добавляет индексы для ускорения выполнение запросов: один индекс помогает быстрее соединять таблицы, другой индекс помогает фильтровать и группировать данные по дате и статусу, а третий индекс еще сильнее ускоряет отчеты, потому что касается только доставленных заказов. В итоге при формировании отчета база данных начинает работать быстрее.  |
+
+## Отчет по продажам за предыдущую неделю с группировкой по дням
+
+SELECT o.date_created,
+       SUM(op.quantity) AS total_sausages_sold
+FROM   orders AS o
+       JOIN order_product AS op ON o.id = op.order_id
+WHERE  o.status = 'shipped'
+  AND  o.date_created > NOW() - INTERVAL '7 DAY'
+GROUP BY o.date_created
+ORDER BY o.date_created;
