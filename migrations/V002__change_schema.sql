@@ -15,12 +15,6 @@ SET    date_created = od.date_created,
 FROM   orders_date od
 WHERE  o.id = od.order_id;
 
-ALTER TABLE product
-    ADD PRIMARY KEY (id);
-
-ALTER TABLE orders 
-    ADD PRIMARY KEY (id);
-
 ALTER TABLE order_product
     ADD CONSTRAINT fk_order_product_product
         FOREIGN KEY (product_id) REFERENCES product(id),
