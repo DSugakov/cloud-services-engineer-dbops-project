@@ -1,7 +1,7 @@
 #!/bin/bash
 
-PSQL_ADMIN="denissugakov"
-PSQL_PASSWORD=""
+PSQL_ADMIN="user"
+PSQL_PASSWORD="new_password"
 PSQL_HOST="130.193.38.189"
 PSQL_PORT="5432"
 PSQL_DBNAME="store"
