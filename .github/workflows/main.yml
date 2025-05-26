@@ -11,14 +11,14 @@ jobs:
       uses: actions/checkout@v4
 
     ### Запускаем Flyway‑миграции
-    - name: Flyway repair
-      run: |
-        docker run --rm \
-        -v ${{ github.workspace }}/migrations:/flyway/sql \
-        flyway/flyway:10-alpine repair \
-        -url=jdbc:postgresql://${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }} \
-        -user=${{ secrets.DB_USER }} \
-        -password=${{ secrets.DB_PASSWORD }}
+    # - name: Flyway repair
+    #   run: |
+    #     docker run --rm \
+    #     -v ${{ github.workspace }}/migrations:/flyway/sql \
+    #     flyway/flyway:10-alpine repair \
+    #     -url=jdbc:postgresql://${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }} \
+    #     -user=${{ secrets.DB_USER }} \
+    #     -password=${{ secrets.DB_PASSWORD }}
 
     - name: Flyway migrate
       run: |
