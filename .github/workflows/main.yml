@@ -18,7 +18,16 @@ jobs:
           -url="jdbc:postgresql://${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }}" \
           -user="${{ secrets.DB_USER }}" \
           -password="${{ secrets.DB_PASSWORD }}" \
-          repair
+          repair -X
+
+    - name: Check table structure and Flyway history after Repair
+      env:
+        PGPASSWORD: ${{ secrets.DB_PASSWORD }}
+      run: |
+        echo "--- Describing product table after repair ---"
+        docker run --rm --network host postgres:16 psql -h "${{ secrets.DB_HOST }}" -p "${{ secrets.DB_PORT }}" -U "${{ secrets.DB_USER }}" -d "${{ secrets.DB_NAME }}" -c "\d product" || echo "Product table not found or psql error"
+        echo "--- Flyway schema history after repair ---"
+        docker run --rm --network host postgres:16 psql -h "${{ secrets.DB_HOST }}" -p "${{ secrets.DB_PORT }}" -U "${{ secrets.DB_USER }}" -d "${{ secrets.DB_NAME }}" -c "SELECT * FROM flyway_schema_history ORDER BY installed_rank;" || echo "Flyway history not found or psql error"
 
     - name: Apply migrations with Flyway
       run: |
@@ -28,7 +37,16 @@ jobs:
           -url="jdbc:postgresql://${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }}" \
           -user="${{ secrets.DB_USER }}" \
           -password="${{ secrets.DB_PASSWORD }}" \
-          migrate
+          migrate -X
+
+    - name: Check table structure and Flyway history after Migrate
+      env:
+        PGPASSWORD: ${{ secrets.DB_PASSWORD }}
+      run: |
+        echo "--- Describing product table after migrate ---"
+        docker run --rm --network host postgres:16 psql -h "${{ secrets.DB_HOST }}" -p "${{ secrets.DB_PORT }}" -U "${{ secrets.DB_USER }}" -d "${{ secrets.DB_NAME }}" -c "\d product" || echo "Product table not found or psql error"
+        echo "--- Flyway schema history after migrate ---"
+        docker run --rm --network host postgres:16 psql -h "${{ secrets.DB_HOST }}" -p "${{ secrets.DB_PORT }}" -U "${{ secrets.DB_USER }}" -d "${{ secrets.DB_NAME }}" -c "SELECT * FROM flyway_schema_history ORDER BY installed_rank;" || echo "Flyway history not found or psql error"
 
     - name: Download and setup autotests binaries
       run: |
