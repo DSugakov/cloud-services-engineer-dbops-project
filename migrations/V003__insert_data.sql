@@ -17,8 +17,18 @@ SELECT i,
 FROM generate_series(1, 200000) s(i);
 
 -- Вставляем начальные данные в таблицу order_product
+-- Используем CROSS JOIN для генерации всех возможных комбинаций order_id и product_id
+-- и затем выбираем случайные 300000 записей
+WITH all_combinations AS (
+    SELECT 
+        o.id as order_id,
+        p.id as product_id,
+        floor(1 + random() * 20)::int as quantity
+    FROM orders o
+    CROSS JOIN product p
+)
 INSERT INTO order_product (quantity, order_id, product_id)
-SELECT floor(1+random()*20)::int,
-       floor(random() * (select count(*) from orders) + 1)::int,
-       floor(random() * (select count(*) from product) + 1)::int
-FROM generate_series(1, 300000) s(i);
+SELECT quantity, order_id, product_id
+FROM all_combinations
+ORDER BY random()
+LIMIT 300000;
