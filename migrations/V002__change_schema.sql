@@ -10,8 +10,12 @@ ALTER TABLE orders
     ADD COLUMN date_created DATE;
 
 UPDATE orders o
-SET    date_created = od.date_created,
-       status = COALESCE(o.status, od.status)
+SET    date_created = od.date_created
+FROM   orders_date od
+WHERE  o.id = od.order_id;
+
+UPDATE orders o
+SET    status = COALESCE(o.status, od.status)
 FROM   orders_date od
 WHERE  o.id = od.order_id;
 
