@@ -62,13 +62,48 @@ CREATE DATABASE store OWNER migration_user;
 | **V003\_\_insert\_data.sql**   | Наполняет базу данными: добавляет список товаров и создает заказы с позициями. Данные создаются автоматически - с помощью генерации случайных значений и серий. В конце обновляется информация, нужная PostgreSQL для быстрой работы с этими таблицами.                                                                                               |
 | **V004\_\_create\_index.sql**  | Добавляет индексы для ускорения выполнение запросов: один индекс помогает быстрее соединять таблицы, другой индекс помогает фильтровать и группировать данные по дате и статусу, а третий индекс еще сильнее ускоряет отчеты, потому что касается только доставленных заказов. В итоге при формировании отчета база данных начинает работать быстрее.  |
 
-## Отчет по продажам за предыдущую неделю с группировкой по дням
+## Настройка прав доступа
 
-SELECT o.date_created,
-       SUM(op.quantity) AS total_sausages_sold
-FROM   orders AS o
-       JOIN order_product AS op ON o.id = op.order_id
-WHERE  o.status = 'shipped'
-  AND  o.date_created > NOW() - INTERVAL '7 DAY'
-GROUP BY o.date_created
-ORDER BY o.date_created;
+Для выполнения миграций и автотестов необходимо создать пользователя и выдать ему необходимые права:
+
+```sql
+-- Создание пользователя для миграций и тестов
+CREATE USER dbops_user WITH PASSWORD 'dbops_password';
+
+-- Выдача прав на схему public
+GRANT USAGE ON SCHEMA public TO dbops_user;
+
+-- Выдача прав на все таблицы
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO dbops_user;
+
+-- Выдача прав на последовательности (для ID)
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO dbops_user;
+
+-- Выдача прав на создание таблиц (для миграций)
+GRANT CREATE ON SCHEMA public TO dbops_user;
+```
+
+## Отчеты
+
+### Продажи за предыдущую неделю
+
+```sql
+SELECT 
+    p.name as product_name,
+    SUM(op.quantity) as total_quantity,
+    SUM(op.quantity * p.price) as total_revenue
+FROM order_product op
+JOIN product p ON op.product_id = p.id
+JOIN orders o ON op.order_id = o.id
+WHERE o.status = 'shipped'
+    AND o.date_created >= CURRENT_DATE - INTERVAL '7 days'
+    AND o.date_created < CURRENT_DATE
+GROUP BY p.name
+ORDER BY total_quantity DESC;
+```
+
+Этот запрос показывает:
+- Название продукта
+- Общее количество проданных единиц
+- Общую выручку
+за последние 7 дней по отгруженным заказам.

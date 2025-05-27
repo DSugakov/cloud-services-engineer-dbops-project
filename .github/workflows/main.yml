@@ -18,15 +18,13 @@ jobs:
           -url="jdbc:postgresql://${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }}" \
           -user="${{ secrets.DB_USER }}" \
           -password="${{ secrets.DB_PASSWORD }}" \
-          repair -X
+          repair
 
     - name: Check table structure and Flyway history after Repair
       run: |
         DB_CONN_STRING="postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }}"
-        echo "--- Describing product table after repair ---"
-        docker run --rm --network host postgres:16 psql "$DB_CONN_STRING" -c "\d product" || echo "Product table not found or psql error"
-        echo "--- Flyway schema history after repair ---"
-        docker run --rm --network host postgres:16 psql "$DB_CONN_STRING" -c "SELECT * FROM flyway_schema_history ORDER BY installed_rank;" || echo "Flyway history not found or psql error"
+        docker run --rm --network host postgres:16 psql "$DB_CONN_STRING" -c "\d product" || echo "Product table not found"
+        docker run --rm --network host postgres:16 psql "$DB_CONN_STRING" -c "SELECT * FROM flyway_schema_history ORDER BY installed_rank;" || echo "Flyway history not found"
 
     - name: Apply migrations with Flyway
       run: |
@@ -36,15 +34,13 @@ jobs:
           -url="jdbc:postgresql://${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }}" \
           -user="${{ secrets.DB_USER }}" \
           -password="${{ secrets.DB_PASSWORD }}" \
-          migrate -X
+          migrate
 
     - name: Check table structure and Flyway history after Migrate
       run: |
         DB_CONN_STRING="postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.DB_NAME }}"
-        echo "--- Describing product table after migrate ---"
-        docker run --rm --network host postgres:16 psql "$DB_CONN_STRING" -c "\d product" || echo "Product table not found or psql error"
-        echo "--- Flyway schema history after migrate ---"
-        docker run --rm --network host postgres:16 psql "$DB_CONN_STRING" -c "SELECT * FROM flyway_schema_history ORDER BY installed_rank;" || echo "Flyway history not found or psql error"
+        docker run --rm --network host postgres:16 psql "$DB_CONN_STRING" -c "\d product" || echo "Product table not found"
+        docker run --rm --network host postgres:16 psql "$DB_CONN_STRING" -c "SELECT * FROM flyway_schema_history ORDER BY installed_rank;" || echo "Flyway history not found"
 
     - name: Download and setup autotests binaries
       run: |
